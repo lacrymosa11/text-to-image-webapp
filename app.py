@@ -1,36 +1,30 @@
 
 import streamlit as st
 import openai
-import nltk
-from nltk.tokenize import sent_tokenize
 
-nltk.download('punkt')
+st.set_page_config(page_title="Metinden Görsel Üret", layout="wide")
+st.title("📷 Metin Anlatımından Görsel Üretme")
 
-# OpenAI API anahtarını buraya girin
-openai.api_key = "YOUR_OPENAI_API_KEY"
-
-st.title("📷 Metinden Görsel Üreten Yapay Zeka")
-text = st.text_area("Metni girin:")
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 def generate_image(prompt):
-    response = openai.Image.create(
+    response = openai.images.generate(
+        model="dall-e-3",
         prompt=prompt,
-        n=1,
-        size="512x512",
-        model="dall-e-3"
+        size="1024x1024",
+        quality="standard",
+        n=1
     )
-    return response['data'][0]['url']
+    return response.data[0].url
 
-def create_prompt(sentence):
-    return f"photo-realistic image illustrating: {sentence.strip()}"
-
-if st.button("Görselleri Üret"):
-    if text.strip():
-        sentences = sent_tokenize(text)
-        for i, sentence in enumerate(sentences):
-            with st.spinner(f"Görsel üretiliyor: {sentence}"):
-                prompt = create_prompt(sentence)
-                image_url = generate_image(prompt)
-                st.image(image_url, caption=sentence)
-    else:
-        st.warning("Lütfen metin girin.")
+text = st.text_area("Metni girin", height=200)
+if st.button("Görselleri Üret") and text:
+    with st.spinner("Görseller üretiliyor..."):
+        sentences = [s.strip() for s in text.split('.') if s.strip()]
+        for i, sentence in enumerate(sentences, 1):
+            image_prompt = sentence
+            try:
+                image_url = generate_image(image_prompt)
+                st.image(image_url, caption=f"{i}. Görsel: {sentence}", use_column_width=True)
+            except Exception as e:
+                st.error(f"Görsel oluşturulamadı: {e}")
